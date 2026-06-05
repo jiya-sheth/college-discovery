@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { CollegeSearchCombo } from '@/components/compare/college-search-combo';
 import { CompareTable } from '@/components/compare/compare-table';

@@ -6,6 +6,8 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client'],
   },
+  // Force all pages to be dynamic to avoid prerender errors
+  staticPageGenerationTimeout: 0,
 };
 
 module.exports = nextConfig;

@@ -1,4 +1,7 @@
 'use client';
+export const dynamic = 'force-dynamic';
+
+import { Suspense } from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CollegeCard } from '@/components/college/college-card';
@@ -15,16 +18,11 @@ interface College {
   avgPackage: number | null; placementPct: number | null; naacGrade: string | null;
 }
 
-interface Pagination {
-  total: number; page: number; limit: number; totalPages: number; hasMore: boolean;
-}
-
-export default function CollegesPage() {
+function CollegesInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-
   const [colleges, setColleges] = useState<College[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [pagination, setPagination] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -56,7 +54,6 @@ export default function CollegesPage() {
 
   return (
     <div className="page-container">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Explore Colleges</h1>
         <p className="text-gray-500 mt-1">
@@ -64,7 +61,6 @@ export default function CollegesPage() {
         </p>
       </div>
 
-      {/* Search + Filter Toggle */}
       <div className="flex gap-3 mb-6">
         <div className="flex-1">
           <SearchBar
@@ -73,10 +69,7 @@ export default function CollegesPage() {
             onSearch={(q) => updateParam('q', q || null)}
           />
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="btn-secondary flex items-center gap-2 relative"
-        >
+        <button onClick={() => setShowFilters(!showFilters)} className="btn-secondary flex items-center gap-2 relative">
           <SlidersHorizontal className="w-4 h-4" />
           Filters
           {activeFiltersCount > 0 && (
@@ -88,7 +81,6 @@ export default function CollegesPage() {
       </div>
 
       <div className="flex gap-6">
-        {/* Filters Sidebar */}
         {showFilters && (
           <aside className="w-64 shrink-0">
             <div className="card p-4 sticky top-4">
@@ -98,36 +90,27 @@ export default function CollegesPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <CollegeFilters
-                params={Object.fromEntries(searchParams)}
-                onChange={updateParam}
-              />
+              <CollegeFilters params={Object.fromEntries(searchParams)} onChange={updateParam} />
             </div>
           </aside>
         )}
 
-        {/* Results */}
         <div className="flex-1 min-w-0">
-          {/* Sort */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex gap-2 text-sm flex-wrap">
               {['rating', 'minFees', 'nirfRank', 'reviewCount'].map((sort) => (
-                <button
-                  key={sort}
-                  onClick={() => updateParam('sortBy', sort)}
+                <button key={sort} onClick={() => updateParam('sortBy', sort)}
                   className={`px-3 py-1.5 rounded-lg border transition-colors ${
                     (searchParams.get('sortBy') ?? 'rating') === sort
                       ? 'bg-brand-600 text-white border-brand-600'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
+                  }`}>
                   {sort === 'rating' ? 'Top Rated' : sort === 'minFees' ? 'Lowest Fees' : sort === 'nirfRank' ? 'NIRF Rank' : 'Most Reviewed'}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Grid */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => <CollegeCardSkeleton key={i} />)}
@@ -145,18 +128,21 @@ export default function CollegesPage() {
             </div>
           )}
 
-          {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
             <div className="mt-8">
-              <Pagination
-                page={pagination.page}
-                totalPages={pagination.totalPages}
-                onPageChange={(p) => updateParam('page', String(p))}
-              />
+              <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={(p) => updateParam('page', String(p))} />
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CollegesPage() {
+  return (
+    <Suspense fallback={<div className="page-container"><div className="text-gray-500">Loading...</div></div>}>
+      <CollegesInner />
+    </Suspense>
   );
 }
