@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  savedColleges SavedCollege[]
+  savedCompares SavedComparison[]
+  reviews       Review[]
+  questions     Question[]
+  answers       Answer[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model College {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  location    String
+  city        String
+  state       String
+  type        String
+  category    String
+  established Int
+  website     String?
+  imageUrl    String?
+  logoUrl     String?
+  description String
+  rating      Float   @default(0)
+  reviewCount Int     @default(0)
+
+  minFees Int
+  maxFees Int
+
+  nirfRank Int?
+  qsRank   Int?
+
+  avgPackage   Float?
+  maxPackage   Float?
+  placementPct Float?
+
+  hostel      Boolean @default(false)
+  scholarship Boolean @default(false)
+  sports      Boolean @default(false)
+  labs        Boolean @default(false)
+  library     Boolean @default(false)
+
+  accreditation String?
+  naacGrade     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses          Course[]
+  reviews          Review[]
+  savedBy          SavedCollege[]
+  comparisonsA     SavedComparison[] @relation("ComparisonCollegeA")
+  comparisonsB     SavedComparison[] @relation("ComparisonCollegeB")
+  comparisonsC     SavedComparison[] @relation("ComparisonCollegeC")
+  predictorResults PredictorResult[]
+
+  @@index([state])
+  @@index([category])
+  @@index([rating])
+  @@index([minFees])
+  @@map("colleges")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  collegeId   String
+  name        String
+  degree      String
+  duration    Int
+  minFees     Int
+  maxFees     Int
+  seats       Int?
+  exams       String[]
+  description String?
+
+  college College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId])
+  @@map("courses")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  collegeId String
+  userId    String
+  rating    Float
+  title     String
+  content   String
+  pros      String?
+  cons      String?
+  batch     Int?
+  program   String?
+  helpful   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  college College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId])
+  @@map("reviews")
+}
+
+model SavedCollege {
+  id        String   @id @default(cuid())
+  userId    String
+  collegeId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, collegeId])
+  @@map("saved_colleges")
+}
+
+model SavedComparison {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String?
+  collegeAId String
+  collegeBId String
+  collegeCId String?
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeA College  @relation("ComparisonCollegeA", fields: [collegeAId], references: [id])
+  collegeB College  @relation("ComparisonCollegeB", fields: [collegeBId], references: [id])
+  collegeC College? @relation("ComparisonCollegeC", fields: [collegeCId], references: [id])
+
+  @@map("saved_comparisons")
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String
+  tags      String[]
+  views     Int      @default(0)
+  upvotes   Int      @default(0)
+  solved    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@index([tags])
+  @@map("questions")
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  questionId String
+  userId     String
+  content    String
+  upvotes    Int      @default(0)
+  isAccepted Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("answers")
+}
+
+model PredictorResult {
+  id        String  @id @default(cuid())
+  exam      String
+  minRank   Int
+  maxRank   Int
+  collegeId String
+  courseId  String?
+  category  String?
+  quota     String?
+
+  college College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@index([exam, minRank, maxRank])
+  @@map("predictor_results")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
